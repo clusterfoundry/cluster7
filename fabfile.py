@@ -68,7 +68,7 @@ def prepare_db():
 
 	devpanel_node[env.host] = { 'db': {} }
 
-	with hide('output'):
+	with hide('output','running'):
 		# Test MySQL access
 		if run('mysql %s -e \'SELECT "OK" FROM DUAL\' ; true' % mysql_opts).endswith('OK'):
 			# connected to mysql successfully,
@@ -95,7 +95,7 @@ def prepare_db():
 def dump_schemas():
 	mysql_opts = '--skip-column-names -NAB -u%s -h%s -P%s' % ('root', db_shadow_conf[env.host][4], db_shadow_conf[env.host][5])
 
-	with hide('output'):
+	with hide('output','running'):
 		mysql_query = 'show databases'
 		# get list of databases
 		mysql_res = run('mysql %s -e "%s"' % (mysql_opts, mysql_query))
@@ -103,10 +103,20 @@ def dump_schemas():
 		for unused_db in [ 'information_schema', 'performance_schema', 'mysql', 'test' ]:
 			mysql_database.remove(unused_db)
 
-		print green('[%s]: Schema(s) to dump: %s' % (env.host, mysql_database))
+		print green('[%s] Schema(s) to dump: %s' % (env.host, mysql_database))
 		for schema_to_dump in mysql_database:
 			run('mysqldump -u%s -h%s -P%s --databases %s > /tmp/%s.sql' % ('root', db_shadow_conf[env.host][4], db_shadow_conf[env.host][5], schema_to_dump, schema_to_dump))
-			print green('[%s]: Schema %s dumped to /tmp/%s.sql' % (env.host, schema_to_dump, schema_to_dump))
+			print green('[%s] Schema %s dumped to /tmp/%s.sql' % (env.host, schema_to_dump, schema_to_dump))
+
+@roles('devpanel_nodes')
+def disable_services():
+	with hide('output', 'running'):
+		with settings(warn_only=True):
+			for service in ['devpanel-taskd', 'devpanel-dbmgr']:
+				if cuisine.file_exists('/etc/init/%s.conf' % service):
+					run('echo mv /etc/init/%s.conf /etc/init/%s.conf.disabled' % (service, service))
+				if cuisine.file_exists('/etc/init.d/%s' % service):
+					run('echo update-rc.d %s disabled' % service)
 
 
 
@@ -114,6 +124,7 @@ if __name__ == '__main__':
 	execute(get_devpanel_config)
 	execute(prepare_db)
 	execute(dump_schemas)
+	execute(disable_services)
 #	execute(setup_web)
 #	execute(setup_db)
 
