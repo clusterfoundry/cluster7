@@ -1,10 +1,14 @@
 class ClusterNode:
     def __init__(self):
-        self.hostname = None
-        self.password = None
-        self.ipaddress = None
-    def setPassword(self, password):
-        self.password = password
+        self.hostname = "localhost"
+        self.ipaddress = "127.0.0.1"
+        self.root_password = ""
+    def setIP(self, ipaddress):
+        self.ipaddress = ipaddress
+    def setRootPassword(self, root_password):
+        self.root_password = root_password
+    def setHostname(self, hostname):
+        self.hostname = hostname    
 
 class ClusterConfig:
     def __init__(self):
